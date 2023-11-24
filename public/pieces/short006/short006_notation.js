@@ -1,6 +1,7 @@
 //#ef NOTES
 /*
 Generate Curve Upstroke
+Figure out best descent and ascent
 Make 1 staff of Curves
 Make curves for all staves
 
@@ -34,10 +35,13 @@ Doesn't need to be perfect just needs to run
 */
 //#endef NOTES
 
+
+
 //#ef GLOBAL VARIABLES
 
+
 //#ef General Variables
-let NUM_PLAYERS = 4;
+let NUM_PLAYERS = 1;
 const TEMPO_COLORS = [clr_brightOrange, clr_brightGreen, clr_brightBlue, clr_lavander, clr_darkRed2];
 //#endef General Variables
 
@@ -45,7 +49,7 @@ const TEMPO_COLORS = [clr_brightOrange, clr_brightGreen, clr_brightBlue, clr_lav
 const FRAMERATE = 60;
 const FRAMES_PER_MS = FRAMERATE / 1000;
 let FRAMECOUNT = 0;
-const PX_PER_SEC = 30; //scrolling speed
+const PX_PER_SEC = 18; //scrolling speed
 const PX_PER_MS = PX_PER_SEC / 1000;
 const MS_PER_PX = 1000 / PX_PER_SEC;
 const PX_PER_FRAME = PX_PER_SEC / FRAMERATE;
@@ -74,7 +78,8 @@ const MAX_W = 1280; //16:10 aspect ratio; 0.625
 const MAX_H = 720;
 const WORLD_MARGIN = 10;
 const WORLD_W = Math.min(DEVICE_SCREEN_W, MAX_W) - (WORLD_MARGIN * 2);
-const WORLD_H = Math.min(DEVICE_SCREEN_H, MAX_H) - 45;
+// const WORLD_H = Math.min(DEVICE_SCREEN_H, MAX_H) - 45;
+const WORLD_H = 100;
 const WORLD_CENTER = WORLD_W / 2;
 const GAP = 6;
 //#endef World Panel Variables
@@ -91,9 +96,10 @@ const scrBB_RADIUS = 7;
 //#endef Scrolling Bouncy Balls
 
 //#ef Staff Variables
-const NUMSTAVES = 4;
+const NUMSTAVES = 1;
 const STAFFGAP = 4;
-const STAFF_H = (NOTATIONCANVAS_H - (STAFFGAP * (NUMSTAVES - 1))) / NUMSTAVES;
+// const STAFF_H = (NOTATIONCANVAS_H - (STAFFGAP * (NUMSTAVES - 1))) / NUMSTAVES;
+const STAFF_H = 100;
 const STAFF_W = NOTATIONCANVAS_W;
 let staves = [];
 //#endef Staff Variables
@@ -104,6 +110,7 @@ const STAFF_WIDTH_IN_FRAMES = Math.round(STAFF_W / PX_PER_FRAME); //Width of the
 let timelineFRAMES = [];
 //which frame for each MS
 const STAFF_WIDTH_IN_MS = Math.round(STAFF_W / PX_PER_MS); //Width of the staff in frames
+console.log(STAFF_WIDTH_IN_MS / 1000 + " - duration of one staff");
 let timelineMS_returnsFrames = [];
 for (var i = 0; i < STAFF_WIDTH_IN_MS; i++) {
   let tFrameNum = Math.round(FRAMES_PER_MS * i);
@@ -133,7 +140,91 @@ for (var i = 0; i < timelineFRAMES.length; i++) { //initialize all with BB at th
 }
 //#endef Curves
 
+//#ef Generate Event Timings
+//1 minute 10 seconds = 69seconds = 69000 MS
+//P1 CURVES
+//1st curve between 1-1:43;
+//1st gap 3.4-5.1
+// Reduce gap by 14-18%
+// Figure out initial descent
+// Increase descent by 14%
+
+let crvData = [];
+
+//ASCENT
+let ascentDur = 550;
+let ascentExp = 1.9;
+let ascentCrvWidthPixels = Math.round(ascentDur * PX_PER_MS);
+var ascentCrvCoords = plot(function(x) {
+  return Math.pow(x, ascentExp);
+}, [0, 1, 1, 0], ascentCrvWidthPixels, STAFF_H, scrBB_RADIUS);
+ascentCrvCoords = ascentCrvCoords.reverse();
+let ascentCrvDurFrames = Math.round(ascentDur * FRAMES_PER_MS);
+
+// let crv1Start = rrand(400, 1300);
+// console.log(crv1Start);
+let crv1Start = 3500;
+let crv1Dur = 175;
+let crv1Exp = 2;
+
+//Curve Durs increase
+let crvDurIncreasePct = 1.21;
+let increasingCrvDurs = [];
+let tCrvDur = crv1Dur;
+for (let i = 0; i < 20; i++) {
+  tCrvDur = Math.round(tCrvDur * crvDurIncreasePct);
+  increasingCrvDurs.push(tCrvDur);
+}
+
+// let gap1 = rrand(5100, 6500);
+// console.log(gap1);
+let gap1 = 6345;
+
+let crv1Data = {};
+crv1Data['start'] = crv1Start;
+crv1Data['dur'] = crv1Dur;
+crv1Data['exp'] = crv1Exp;
+
+crvData.push(crv1Data);
+
+
+//Generate the rest of gaps
+// let gapDecreasePcts = [];
+// for (let i = 0; i < 20; i++) {
+//   let tPct = rrand(1 - 0.13, 1 - 0.16);
+//   gapDecreasePcts.push(tPct);
+// }
+// console.log(gapDecreasePcts);
+
+let gapDecreasePcts = [0.8541675492528882, 0.8418015752224325, 0.8565168821154359, 0.8412528474412787, 0.8435372779206002, 0.8483262896291854, 0.8442877274431206, 0.8443015025069693, 0.852053809412406, 0.8495288982695903, 0.8657746729507824, 0.8695640211026103, 0.8603042633872312, 0.8569170776201105, 0.8422775716120557, 0.8666754783771686, 0.8643414947316683, 0.8562182437784353, 0.8547081549882838, 0.8410856044102984];
+let crvGaps = [];
+let tCrvGap = gap1;
+crvGaps.push(gap1);
+for (let i = 0; i < 20; i++) {
+  tCrvGap = Math.round(tCrvGap * gapDecreasePcts[i]);
+  crvGaps.push(tCrvGap);
+}
+
+
+for (let i = 0; i < 18; i++) {
+  let tCrvData = {};
+  tCrvData['start'] = crvData[i].start + crvData[i].dur + crvGaps[i];
+  tCrvData['dur'] = increasingCrvDurs[i];
+  tCrvData['exp'] = 2;
+
+  crvData.push(tCrvData);
+}
+console.log(crvData);
+// let crv2start = crv1Start + crv1Dur + gap1;
+// let crv2dur = increasingCrvDurs[0];
+// let crv2exp = 2;
+
+//#endef Generate Event Timings
+
+
 //#endef GLOBAL VARIABLES
+
+
 
 //#ef INIT
 function init() {
@@ -151,6 +242,8 @@ function init() {
 
 } // function init() END
 //#endef INIT
+
+
 
 //#ef BUILD WORLD
 
@@ -248,52 +341,121 @@ function makeScrollingCursors() {
 
 //#ef Make Curves
 function makeCurves() {
-  //GEnerate start time and duration
-  // start sec 3, duration 1.5 seconds
-  //Calculate # of pixels based on duration
-  let crvWidthPixels = Math.round(1.5 * PX_PER_SEC);
-  //Generate Curve of crvWidthPixels; each index has x and y
-  var crvCoords = plot(function(x) { //generate curve
-    return Math.pow(x, 0.5); //Math.pow(x, 1.5) the 1.5 here is the curve shape; >1 slow curve at beginning, faster curve at end; <1 opposite
-  }, [0, 1, 1, 0], crvWidthPixels, STAFF_H); // [0, 1, 1, 0], 150, STAFF_H) 150 is width of the curve; generates array with size 150
 
-  let crvStartTimeMS = 3000;
-  let crvStartFrameNumber = Math.round(crvStartTimeMS / MS_PER_FRAME); //find out which frame the curve starts on and look up the x-pixel in timelineFrames;
-  let crvDurFrames = Math.round(1.5 * FRAMERATE);
-  //let crvStartX = timelineFRAMES[crvStartFrameNumber].x;
+  for (var j = 0; j < crvData.length; j++) {
+    let tStart = crvData[j].start;
+    let tDur = crvData[j].dur;
+    let tExp = crvData[j].exp;
+    let tCrvWidthPixels = Math.round(tDur * PX_PER_MS);
 
-  //add y coordinate of curve to timelineFRAMES
-  // each x convert to framenumber
-  // add start frame number
-  // frame i * frames per pixel = crvCoords ix
-  for (var i = 0; i < crvDurFrames; i++) {
-    let tframeNum = crvStartFrameNumber + i;
-    let tLookUpPixel = Math.min(Math.round(i * PX_PER_FRAME), crvCoords.length - 1);
-    console.log(tLookUpPixel);
-    let tCrvY = crvCoords[tLookUpPixel].y;
-    timelineFRAMES[tframeNum].crvY = tCrvY;
-  }
+    //Plot Main Curve
+    let tCrvCoords = plot(function(x) {
+      return Math.pow(x, 2);
+    }, [0, 1, 1, 0], tCrvWidthPixels, STAFF_H, scrBB_RADIUS);
 
-  //Draw Curve
-  let crvStartX = crvStartTimeMS * PX_PER_MS;
-  var tSvgCrv = document.createElementNS(SVG_NS, "path");
-  var tpathstr = "";
+    let tCrvStartFrameNumber = Math.round(tStart / MS_PER_FRAME); //find out which frame the curve starts on and look up the x-pixel in timelineFrames;
+    let tCrvDurFrames = Math.round(tDur * FRAMES_PER_MS);
+    let tCrvEndFrameNumber = tCrvStartFrameNumber + tCrvDurFrames + ascentCrvDurFrames;
 
-  for (var i = 0; i < crvCoords.length; i++) {
-    let tcrvX = crvStartX + crvCoords[i].x;
-    if (i == 0) {
-      tpathstr = tpathstr + "M" + tcrvX.toString() + " " + crvCoords[i].y.toString() + " ";
-    } else {
-      tpathstr = tpathstr + "L" + tcrvX.toString() + " " + crvCoords[i].y.toString() + " ";
+    if (tCrvEndFrameNumber < timelineFRAMES.length) { //to not exceed length of piece
+      //Add curve y coords to timelineFRAMES
+      let ascentStartFrameNumber;
+      for (var i = 0; i < tCrvDurFrames; i++) {
+        let tframeNum = tCrvStartFrameNumber + i;
+        let tLookUpPixel = Math.min(Math.round(i * PX_PER_FRAME), tCrvCoords.length - 1);
+        let tCrvY = tCrvCoords[tLookUpPixel].y;
+        timelineFRAMES[tframeNum].crvY = tCrvY;
+        ascentStartFrameNumber = tframeNum;
+      }
+
+      ascentStartFrameNumber = ascentStartFrameNumber + 1;
+      //Add Ascent Curve to timelineFRAMES
+      for (var i = 0; i < ascentCrvDurFrames; i++) {
+        let tframeNum = ascentStartFrameNumber + i;
+        let tLookUpPixel = Math.min(Math.round(i * PX_PER_FRAME), ascentCrvCoords.length - 1);
+        let tCrvY = ascentCrvCoords[tLookUpPixel].y;
+        timelineFRAMES[tframeNum].crvY = tCrvY;
+      }
+
+      //Draw Curve
+      let tCrvStartX = tStart * PX_PER_MS;
+      var tSvgCrv = document.createElementNS(SVG_NS, "path");
+      var tpathstr = "";
+
+      for (var i = 0; i < tCrvCoords.length; i++) {
+        let tcrvX = tCrvStartX + tCrvCoords[i].x;
+        if (i == 0) {
+          tpathstr = tpathstr + "M" + tcrvX.toString() + " " + tCrvCoords[i].y.toString() + " ";
+        } else {
+          tpathstr = tpathstr + "L" + tcrvX.toString() + " " + tCrvCoords[i].y.toString() + " ";
+        }
+      }
+
+      tSvgCrv.setAttributeNS(null, "d", tpathstr);
+      tSvgCrv.setAttributeNS(null, "stroke", "rgba(255, 21, 160, 0.5)");
+      tSvgCrv.setAttributeNS(null, "stroke-width", "4");
+      tSvgCrv.setAttributeNS(null, "fill", "none");
+      // tSvgCrv.setAttributeNS(null, "transform", "translate( 100, 20)");
+      staves[0].svg.appendChild(tSvgCrv);
     }
-  }
 
-  tSvgCrv.setAttributeNS(null, "d", tpathstr);
-  tSvgCrv.setAttributeNS(null, "stroke", "rgba(255, 21, 160, 0.5)");
-  tSvgCrv.setAttributeNS(null, "stroke-width", "4");
-  tSvgCrv.setAttributeNS(null, "fill", "none");
-  // tSvgCrv.setAttributeNS(null, "transform", "translate( 100, 20)");
-  staves[0].svg.appendChild(tSvgCrv);
+  }
+  //
+  // // start sec 3, duration 1.5 seconds
+  // //Calculate # of pixels based on duration
+  // let crvDur = 175;
+  // let crvStartTimeMS = 3000;
+  // let crvWidthPixels = Math.round(crvDur * PX_PER_MS);
+  // //Generate Curve of crvWidthPixels; each index has x and y
+  // var crvCoords = plot(function(x) { //generate curve
+  //   return Math.pow(x, 2); //Math.pow(x, 1.5) the 1.5 here is the curve shape; >1 slow curve at beginning, faster curve at end; <1 opposite
+  // }, [0, 1, 1, 0], crvWidthPixels, STAFF_H, scrBB_RADIUS); // [0, 1, 1, 0], 150, STAFF_H) 150 is width of the curve; generates array with size 150
+  //
+  // let crvStartFrameNumber = Math.round(crvStartTimeMS / MS_PER_FRAME); //find out which frame the curve starts on and look up the x-pixel in timelineFrames;
+  // let crvDurFrames = Math.round(crvDur * FRAMES_PER_MS);
+  //
+  // //add y coordinate of curve to timelineFRAMES
+  // // each x convert to framenumber
+  // // add start frame number
+  // // frame i * frames per pixel = crvCoords ix
+  // let ascentStartFrameNumber;
+  // for (var i = 0; i < crvDurFrames; i++) {
+  //   let tframeNum = crvStartFrameNumber + i;
+  //   let tLookUpPixel = Math.min(Math.round(i * PX_PER_FRAME), crvCoords.length - 1);
+  //   let tCrvY = crvCoords[tLookUpPixel].y;
+  //   timelineFRAMES[tframeNum].crvY = tCrvY;
+  //   ascentStartFrameNumber = tframeNum;
+  // }
+  //
+  // ascentStartFrameNumber = ascentStartFrameNumber + 1;
+  // //Add Ascent Curve to timelineFRAMES
+  // for (var i = 0; i < ascentCrvDurFrames; i++) {
+  //   let tframeNum = ascentStartFrameNumber + i;
+  //   let tLookUpPixel = Math.min(Math.round(i * PX_PER_FRAME), ascentCrvCoords.length - 1);
+  //   let tCrvY = ascentCrvCoords[tLookUpPixel].y;
+  //   timelineFRAMES[tframeNum].crvY = tCrvY;
+  // }
+
+  // //Draw Curve
+  // let crvStartX = crvStartTimeMS * PX_PER_MS;
+  // var tSvgCrv = document.createElementNS(SVG_NS, "path");
+  // var tpathstr = "";
+  //
+  // for (var i = 0; i < crvCoords.length; i++) {
+  //   let tcrvX = crvStartX + crvCoords[i].x;
+  //   if (i == 0) {
+  //     tpathstr = tpathstr + "M" + tcrvX.toString() + " " + crvCoords[i].y.toString() + " ";
+  //   } else {
+  //     tpathstr = tpathstr + "L" + tcrvX.toString() + " " + crvCoords[i].y.toString() + " ";
+  //   }
+  // }
+  //
+  // tSvgCrv.setAttributeNS(null, "d", tpathstr);
+  // tSvgCrv.setAttributeNS(null, "stroke", "rgba(255, 21, 160, 0.5)");
+  // tSvgCrv.setAttributeNS(null, "stroke-width", "4");
+  // tSvgCrv.setAttributeNS(null, "fill", "none");
+  // // tSvgCrv.setAttributeNS(null, "transform", "translate( 100, 20)");
+  // staves[0].svg.appendChild(tSvgCrv);
 
 }
 //#endef Make Curves
@@ -343,6 +505,8 @@ function makeBBcrvFollower() {
 
 //#endef BUILD WORLD
 
+
+
 //#ef WIPE/UPDATE/DRAW
 
 
@@ -350,23 +514,26 @@ function makeBBcrvFollower() {
 function updateScrollingCsrs() {
 
   let timelineFrameIx = FRAMECOUNT % timelineFRAMES.length;
-  let currScrollingCsrX = timelineFRAMES[timelineFrameIx].x;
+  if (FRAMECOUNT < timelineFRAMES.length) {
+    let currScrollingCsrX = timelineFRAMES[FRAMECOUNT].x;
 
-  for (let playerIX = 0; playerIX < NUM_PLAYERS; playerIX++) {
+    for (let playerIX = 0; playerIX < NUM_PLAYERS; playerIX++) {
 
-    scrollingCursors[playerIX].setAttributeNS(null, 'x1', currScrollingCsrX);
-    scrollingCursors[playerIX].setAttributeNS(null, 'x2', currScrollingCsrX);
+      scrollingCursors[playerIX].setAttributeNS(null, 'x1', currScrollingCsrX);
+      scrollingCursors[playerIX].setAttributeNS(null, 'x2', currScrollingCsrX);
 
-    scrBBs[playerIX].setAttributeNS(null, 'cx', currScrollingCsrX);
-    scrBBs[playerIX].setAttributeNS(null, 'cy', timelineFRAMES[timelineFrameIx].crvY); //updates y coordinate of BB from crvYcoords
+      scrBBs[playerIX].setAttributeNS(null, 'cx', currScrollingCsrX);
+      scrBBs[playerIX].setAttributeNS(null, 'cy', timelineFRAMES[FRAMECOUNT].crvY); //updates y coordinate of BB from crvYcoords
 
-  } // end for (let scrollingCsrIx = 0; scrollingCsrIx < scrollingCursors.length; scrollingCsrIx++)
-
+    } // end for (let scrollingCsrIx = 0; scrollingCsrIx < scrollingCursors.length; scrollingCsrIx++)
+  }
 } // function updateScrollingCsrs() END
 //###endef updateScrollingCsrs
 
 
 //#endef WIPE/UPDATE/DRAW
+
+
 
 //#ef ANIMATION
 

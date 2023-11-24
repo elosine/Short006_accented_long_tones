@@ -1078,7 +1078,7 @@ let generatePalindromeTimeContainers = function({
 
 // #ef plot
 
-function plot(fn, range, width, height) {
+function plot(fn, range, width, height, yAdd) {
 
   let tpoints = [];
   let widthScale = (width / (range[1] - range[0]));
@@ -1092,7 +1092,7 @@ function plot(fn, range, width, height) {
     yGVal = height - yGVal; // 0,0 is top-left
     let tar = {};
     tar.x = x;
-    tar.y = yGVal;
+    tar.y = yGVal + yAdd;
     first = false;
     tpoints.push(tar);
 
